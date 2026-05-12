@@ -27,6 +27,8 @@ public static class ShellHelper
 
     public static CommandOutput RunCommand(string command, params string[] args)
     {
+        Console.WriteLine($"Running command: {command} {string.Join(" ", args)}");
+        
         var processStartInfo = new ProcessStartInfo
         {
             FileName = command,
@@ -37,18 +39,24 @@ public static class ShellHelper
         };
 
         using var process = new Process();
+        process.EnableRaisingEvents = false;
         process.StartInfo = processStartInfo;
 
+        StdOut.Clear();
+        StdErr.Clear();
+        process.OutputDataReceived += LogStdOut;
+        process.ErrorDataReceived += LogStdErr;
+        
         process.Start();
-        var output = process.StandardOutput.ReadToEnd();
-        var error = process.StandardError.ReadToEnd();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
         process.WaitForExit();
 
         return new CommandOutput
         {
             ExitCode = process.ExitCode,
-            StandardOutput = output,
-            StandardError = error
+            StandardOutput = string.Join('\n', StdOut),
+            StandardError = string.Join('\n', StdErr)
         };
     }
 
@@ -57,6 +65,24 @@ public static class ShellHelper
         var output = RunCommand("docker", "ps");
         return output.StandardOutput.Contains("neo4j");
     }
+
+    private static List<string> StdOut = [];
+    private static DataReceivedEventHandler LogStdOut = (_, e) =>
+    {
+        if (e.Data is null) return;
+        
+        Console.WriteLine($"stdout: {e.Data}");
+        StdOut.Add(e.Data);
+    };
+    
+    private static List<string> StdErr = [];
+    private static DataReceivedEventHandler LogStdErr = (_, e) =>
+    {
+        if (e.Data is null) return;
+        
+        Console.WriteLine($"stderr: {e.Data}");
+        StdErr.Add(e.Data);
+    };
 }
 
 public record CommandOutput

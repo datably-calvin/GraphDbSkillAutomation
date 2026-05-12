@@ -10,14 +10,14 @@ if (args.Length != 2)
     return 1;
 }
 
-var repoPath = Path.GetFullPath(args[0]);
+var repoPath = FileHelper.GetAbsolutePath(args[0]);
 if (!Directory.Exists(repoPath))
 {
     Console.WriteLine($"Path '{repoPath}' does not exist");
     return 1;
 }
 
-var envPath = Path.GetFullPath(args[1]);
+var envPath = FileHelper.GetAbsolutePath(args[1]);
 if (!File.Exists(envPath))
 {
     Console.WriteLine($"File '{envPath}' does not exist");
@@ -59,13 +59,12 @@ if (!File.Exists(graphDbBinaryFilePath))
 {
     Console.WriteLine($"Downloading latest graphdb release to '{graphDbBinaryFilePath}'...");
     Directory.CreateDirectory(graphDbBinaryFolderPath);
-    FileHelper.DownloadFile(graphDbRepoPath, "https://github.com/jjdelorme/graphdb-skill/releases/latest/download/graphdb");
+    FileHelper.DownloadFile(graphDbBinaryFilePath, "https://github.com/jjdelorme/graphdb-skill/releases/latest/download/graphdb");
     ShellHelper.RunCommand("chmod", $"+x {graphDbBinaryFilePath}");
 }
 
 var neo4jScriptsFolderPath = Path.Combine(geminiSkillsFolder, "neo4j-manager", "scripts");
 var neo4jStartupScriptPath = Path.Combine(neo4jScriptsFolderPath, "start_neo4j_container.sh");
-
 var neo4jEnvPath = Path.Combine(neo4jScriptsFolderPath, ".env");
 File.Copy(envPath, neo4jEnvPath, true);
 
