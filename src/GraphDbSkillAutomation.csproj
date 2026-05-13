@@ -7,4 +7,9 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <PackageReference Include="dotenv.net" Version="4.0.2" />
+      <PackageReference Include="Neo4j.Driver" Version="6.0.0" />
+    </ItemGroup>
+
 </Project>

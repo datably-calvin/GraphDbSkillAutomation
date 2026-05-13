@@ -1,4 +1,5 @@
-﻿using GraphDbSkillAutomation;
+﻿using dotenv.net;
+using GraphDbSkillAutomation;
 
 #region Parameter Checks
 // ------------------------
@@ -24,6 +25,9 @@ if (!File.Exists(envPath))
     Console.WriteLine($"File '{envPath}' does not exist");
     return 1;
 }
+DotEnv.Fluent()
+    .WithEnvFiles(envPath)
+    .Load();
 
 
 var workingDirectory = FileHelper.GetAbsolutePath(args[2]);
@@ -105,7 +109,11 @@ Console.WriteLine($"Step 1: Ingesting the codebase into a JSONL file -> {jsonlFi
 // TODO if the file already exists, maybe use the -since-commit flag?
 if (!File.Exists(jsonlFilePath))
 {
-    ShellHelper.RunCommand(graphDbBinaryFilePath, "ingest -dir", repoPath, "-output", jsonlFilePath);
+    if (!ShellHelper.RunCommand(graphDbBinaryFilePath, "ingest -dir", repoPath, "-output", jsonlFilePath).Success)
+    {
+        Console.WriteLine("Ingestion failed.");
+        return 1;
+    }
 }
 Console.WriteLine("Ingestion complete.");
 
@@ -134,7 +142,44 @@ if (!File.Exists(jsonlFilePath))
     throw new Exception($"Unable to find graph data file: {jsonlFilePath}");
 }
 
-ShellHelper.RunCommand(graphDbBinaryFilePath, "import -input", jsonlFilePath);
+var neo4jClient = new Neo4jClient(new Neo4jCredentials
+{
+    BoltUrl = Environment.GetEnvironmentVariable("NEO4J_URI") ?? "",
+    Username = Environment.GetEnvironmentVariable("NEO4J_USER") ?? "",
+    Password = Environment.GetEnvironmentVariable("NEO4J_PASSWORD") ?? ""
+});
+
+var maxIterations = 6;
+var waitSeconds = 5;
+for (int i = 0; i <= maxIterations; i++)
+{
+    Console.WriteLine("Waiting for neo4j...");
+    try
+    {
+        neo4jClient.QueryInt("RETURN 1");
+        break;
+    }
+    catch (Exception e)
+    {
+        if (i < maxIterations)
+        {
+            Console.WriteLine($"Could not connect to neo4j. Trying again in {waitSeconds} seconds...");
+            Thread.Sleep(waitSeconds * 1000);
+            continue;
+        }
+        
+        Console.WriteLine("Could not connect to neo4j.");
+        Console.WriteLine($"Exception: {e}");
+        return 1;
+    }
+}
+
+if (!ShellHelper.RunCommand(graphDbBinaryFilePath, "import -input", jsonlFilePath).Success)
+{
+    Console.WriteLine("Import failed.");
+    return 1;
+}
+
 Console.WriteLine("Import complete.");
 
 // Usage of import:
