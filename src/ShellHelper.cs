@@ -55,15 +55,15 @@ public static class ShellHelper
         return new CommandOutput
         {
             ExitCode = process.ExitCode,
-            StandardOutput = string.Join('\n', StdOut),
-            StandardError = string.Join('\n', StdErr)
+            StdOut = string.Join('\n', StdOut),
+            StdErr = string.Join('\n', StdErr)
         };
     }
 
-    public static bool IsNeo4jRunning()
+    public static bool DoesNeo4jContainerExist()
     {
         var output = RunCommand("docker", "ps");
-        return output.StandardOutput.Contains("neo4j");
+        return output.StdOut.Contains("neo4j");
     }
 
     private static List<string> StdOut = [];
@@ -89,6 +89,6 @@ public record CommandOutput
 {
     public required int ExitCode { get; init; }
     public bool Success => ExitCode == 0;
-    public required string StandardOutput { get; init; }
-    public required string StandardError { get; init; }
+    public required string StdOut { get; init; }
+    public required string StdErr { get; init; }
 }

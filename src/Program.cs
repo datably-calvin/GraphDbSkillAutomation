@@ -71,6 +71,8 @@ if (!Directory.Exists(graphDbRepoPath))
 
 var geminiSkillsFolder = Path.Combine(graphDbRepoPath, ".gemini", "skills");
 var graphDbBinaryFolderPath = Path.Combine(geminiSkillsFolder, "graphdb", "scripts");
+
+// TODO the GraphState node containing the git commit comes from whatever directory the binary is in
 var graphDbBinaryFilePath = Path.Combine(graphDbBinaryFolderPath, "graphdb");
 if (!File.Exists(graphDbBinaryFilePath))
 {
@@ -83,7 +85,7 @@ if (!File.Exists(graphDbBinaryFilePath))
 var neo4jScriptsFolderPath = Path.Combine(geminiSkillsFolder, "neo4j-manager", "scripts");
 var neo4jEnvPath = Path.Combine(neo4jScriptsFolderPath, ".env");
 File.Copy(envPath, neo4jEnvPath, true);
-if (!ShellHelper.IsNeo4jRunning())
+if (!ShellHelper.DoesNeo4jContainerExist())
 {
     Console.WriteLine("Starting Neo4j container...");
                     
@@ -98,120 +100,60 @@ if (!ShellHelper.IsNeo4jRunning())
 }
 #endregion
 
-#region Ingestion
-// -------------------------
-// --- Step 1: Ingestion ---
-// -------------------------
-
-var jsonlFilePath = Path.Combine(workingDirectory, "graph.jsonl");
-Console.WriteLine($"Step 1: Ingesting the codebase into a JSONL file -> {jsonlFilePath}");
-// TODO check if this step already ran using the graph database
-// TODO if the file already exists, maybe use the -since-commit flag?
-if (!File.Exists(jsonlFilePath))
+var graphDb = new GraphDb(new GraphDbOptions
 {
-    if (!ShellHelper.RunCommand(graphDbBinaryFilePath, "ingest -dir", repoPath, "-output", jsonlFilePath).Success)
-    {
-        Console.WriteLine("Ingestion failed.");
-        return 1;
-    }
-}
-Console.WriteLine("Ingestion complete.");
-
-// Usage of ingest:
-// -dir string
-//     Directory to walk (ignored if -file-list is used) (default ".")
-// -edges string
-//     Output file path for edges
-// -file-list string
-//     Path to a file containing a list of files to process
-// -nodes string
-//     Output file path for nodes
-// -output string
-//     Output file path (combined) (default "graph.jsonl")
-// -since-commit string
-//     Commit hash for incremental ingestion (skips JSONL, writes to DB)
-// -workers int
-//     Number of workers (default 4)
-#endregion
-
-#region Import JSONL
-
-Console.WriteLine("Step 2: Importing JSONL into the database...");
-if (!File.Exists(jsonlFilePath))
-{
-    throw new Exception($"Unable to find graph data file: {jsonlFilePath}");
-}
-
-var neo4jClient = new Neo4jClient(new Neo4jCredentials
-{
-    BoltUrl = Environment.GetEnvironmentVariable("NEO4J_URI") ?? "",
-    Username = Environment.GetEnvironmentVariable("NEO4J_USER") ?? "",
-    Password = Environment.GetEnvironmentVariable("NEO4J_PASSWORD") ?? ""
+    WorkingDirectory = workingDirectory,
+    RepoPath = repoPath,
+    BinaryPath = graphDbBinaryFilePath
 });
 
-var maxIterations = 6;
-var waitSeconds = 5;
-for (int i = 0; i <= maxIterations; i++)
+var jsonlOutputPath = Path.Combine(workingDirectory, "graph.jsonl");
+try
 {
-    Console.WriteLine("Waiting for neo4j...");
-    try
-    {
-        neo4jClient.QueryInt("RETURN 1");
-        break;
-    }
-    catch (Exception e)
-    {
-        if (i < maxIterations)
-        {
-            Console.WriteLine($"Could not connect to neo4j. Trying again in {waitSeconds} seconds...");
-            Thread.Sleep(waitSeconds * 1000);
-            continue;
-        }
-        
-        Console.WriteLine("Could not connect to neo4j.");
-        Console.WriteLine($"Exception: {e}");
-        return 1;
-    }
+    graphDb.Ingest(jsonlOutputPath);
 }
-
-if (!ShellHelper.RunCommand(graphDbBinaryFilePath, "import -input", jsonlFilePath).Success)
+catch (Exception e)
 {
-    Console.WriteLine("Import failed.");
+    Console.WriteLine($"An error occurred while ingesting the codebase: {repoPath}");
+    Console.WriteLine(e);
     return 1;
 }
 
-Console.WriteLine("Import complete.");
+try
+{
+    graphDb.Import(jsonlOutputPath);
+}
+catch (Exception e)
+{
+    Console.WriteLine($"An error occurred while importing the JSONL file to neo4j: {repoPath}");
+    Console.WriteLine(e);
+    return 1;
+}
 
-// Usage of import:
-// -batch-size int
-//     Batch size for insertion (default 500)
-// -edges string
-//     Path to edges JSONL file
-// -input string
-//     Path to combined JSONL file (nodes + edges)
-// -nodes string
-//     Path to nodes JSONL file
-#endregion
+try
+{
+    graphDb.EnrichFeaturesAndEmbed();
+}
+catch (Exception e)
+{
+    Console.WriteLine("An error occurred while enriching features and embedding.");
+    Console.WriteLine(e);
+    return 1;
+}
 
-// #region Enrich Features
-//
-// Console.WriteLine("Step 3: Feature enrichment...");
-// ShellHelper.RunCommand(graphDbBinaryFilePath, "enrich-features -dir", repoPath);
-// Console.WriteLine("Feature enrichment complete.");
-//
-// Usage of enrich-features:
-// -app-context string
-//       Optional path to an OVERVIEW.md or context preamble file
-// -batch-size int
-//       Batch size for LLM feature extraction (default 20)
-// -dir string
-//       Directory to analyze (default ".")
-// -embed-batch-size int
-//       Batch size for embedding generation (default 100)
-// -llm-concurrency int
-//       Number of concurrent LLM requests during extraction/summarization (default 5)
-// -seed int
-//       Seed for deterministic K-Means clustering (default 42)
-// #endregion
+try
+{
+    graphDb.EnrichContamination();
+}
+catch (Exception e)
+{
+    Console.WriteLine("An error occurred while enriching contamination.");
+    Console.WriteLine(e);
+    return 1;
+}
+
+// TODO clean up
+// - remove jsonl file
+// - remove graphdb binary
 
 return 0;

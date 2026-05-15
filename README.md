@@ -12,3 +12,9 @@ created by the graphdb-skill repository. <----- TODO add link
 sudo apt-get update
 sudo apt-get install -y libicu-dev
 ```
+
+TODO gcloud
+```bash
+gcloud init
+gcloud auth application-default login
+```
