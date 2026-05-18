@@ -70,12 +70,6 @@ public static class ShellHelper
         };
     }
 
-    public static bool DoesNeo4jContainerExist()
-    {
-        var output = RunCommand("docker", "ps");
-        return output.StdOut.Contains("neo4j");
-    }
-
     private static List<string> StdOut = [];
     private static DataReceivedEventHandler LogStdOut(bool outputToConsole) => (_, e) =>
     {

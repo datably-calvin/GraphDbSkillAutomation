@@ -4,27 +4,12 @@ namespace GraphDbSkillAutomation;
 
 public class Neo4jClient
 {
-    public static Neo4jClient CreateFromEnvironment => new(new Neo4jCredentials
-    {
-        BoltUrl = Environment.GetEnvironmentVariable("NEO4J_URI") ?? "",
-        Username = Environment.GetEnvironmentVariable("NEO4J_USER") ?? "",
-        Password = Environment.GetEnvironmentVariable("NEO4J_PASSWORD") ?? ""
-    });
+    public static Neo4jClient CreateFromEnvironment => new(Neo4jCredentials.CreateFromEnvironment);
     
     private readonly IDriver _client;
     
-    public Neo4jClient(Neo4jCredentials credentials)
+    private Neo4jClient(Neo4jCredentials credentials)
     {
-        if (string.IsNullOrWhiteSpace(credentials.BoltUrl)
-            || string.IsNullOrWhiteSpace(credentials.Username)
-            || string.IsNullOrWhiteSpace(credentials.Password))
-        {
-            throw new Exception($"Environment variables are not set:\n" +
-                                $"NEO4J_URI: {credentials.BoltUrl}\n" +
-                                $"NEO4J_USER: {credentials.Username}\n" +
-                                $"NEO4J_PASSWORD: {credentials.Password}\n");
-        }
-        
         _client = GraphDatabase.Driver(
             credentials.BoltUrl,
             AuthTokens.Basic(credentials.Username, credentials.Password));
@@ -80,4 +65,26 @@ public record Neo4jCredentials
     public required string BoltUrl { get; init; }
     public required string Username { get; init; }
     public required string Password { get; init; }
+    
+    public static Neo4jCredentials CreateFromEnvironment => AssertValid(new Neo4jCredentials
+    {
+        BoltUrl = Environment.GetEnvironmentVariable("NEO4J_URI") ?? "",
+        Username = Environment.GetEnvironmentVariable("NEO4J_USER") ?? "",
+        Password = Environment.GetEnvironmentVariable("NEO4J_PASSWORD") ?? ""
+    });
+
+    private static Neo4jCredentials AssertValid(Neo4jCredentials credentials)
+    {
+        if (string.IsNullOrWhiteSpace(credentials.BoltUrl)
+            || string.IsNullOrWhiteSpace(credentials.Username)
+            || string.IsNullOrWhiteSpace(credentials.Password))
+        {
+            throw new Exception($"Environment variables are not set:\n" +
+                                $"NEO4J_URI: {credentials.BoltUrl}\n" +
+                                $"NEO4J_USER: {credentials.Username}\n" +
+                                $"NEO4J_PASSWORD: {credentials.Password}\n");
+        }
+
+        return credentials;
+    }
 }

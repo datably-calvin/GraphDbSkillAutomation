@@ -13,7 +13,7 @@ public class GraphDbClient
     {
         Console.WriteLine("Creating Neo4j container...");
         
-        if (ShellHelper.DoesNeo4jContainerExist())
+        if (DockerHelper.IsContainerRunning("neo4j"))
         {
             Console.WriteLine("Neo4j container already exists.");
             return;

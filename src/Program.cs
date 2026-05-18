@@ -71,12 +71,26 @@ var graphDbBinaryFolderPath = Path.Combine(graphDbRepoPath, ".gemini", "skills",
 var graphDbBinaryFilePath = Path.Combine(graphDbBinaryFolderPath, "graphdb");
 if (!File.Exists(graphDbBinaryFilePath))
 {
-    Console.WriteLine($"Downloading latest graphdb release to '{graphDbBinaryFilePath}'...");
+    Console.WriteLine($"Downloading graphdb release v1.8.0 to '{graphDbBinaryFilePath}'...");
     Directory.CreateDirectory(graphDbBinaryFolderPath);
-    FileHelper.DownloadFile(graphDbBinaryFilePath, "https://github.com/jjdelorme/graphdb-skill/releases/latest/download/graphdb");
+    FileHelper.DownloadFile(graphDbBinaryFilePath, "https://github.com/jjdelorme/graphdb-skill/releases/download/v1.8.0/graphdb");
     ShellHelper.RunCommand("chmod", $"+x {graphDbBinaryFilePath}");
 }
 #endregion
+
+try
+{
+    if (!DockerHelper.IsContainerRunning("neo4j"))
+    {
+        DockerHelper.StartNeo4jContainer(workingDirectory);
+    }
+}
+catch (Exception e)
+{
+    Console.WriteLine("An error occurred while starting up the neo4j container:");
+    Console.WriteLine(e);
+    return 1;
+}
 
 var graphDb = new GraphDbClient(new GraphDbOptions
 {
@@ -85,17 +99,22 @@ var graphDb = new GraphDbClient(new GraphDbOptions
     BinaryPath = graphDbBinaryFilePath
 });
 
-File.Copy(envPath, Path.Combine(graphDbRepoPath, ".env"), true);
 try
 {
-    graphDb.StartNeo4jContainer(graphDbRepoPath);
+    Environment.SetEnvironmentVariable("GRAPHDB_DIR", repoPath);
+    var buildAll = ShellHelper.RunCommand(graphDbBinaryFilePath, "build-all");
+    if (!buildAll.Success)
+    {
+        throw new Exception(buildAll.StdErr);
+    }
 }
 catch (Exception e)
 {
-    Console.WriteLine("An error occurred while starting up the neo4j container:");
     Console.WriteLine(e);
     return 1;
 }
+
+return 1;
 
 var jsonlOutputPath = Path.Combine(workingDirectory, "graph.jsonl");
 try
