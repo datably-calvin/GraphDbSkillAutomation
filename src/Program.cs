@@ -85,7 +85,7 @@ var graphDb = new GraphDb(new GraphDbOptions
     BinaryPath = graphDbBinaryFilePath
 });
 
-File.Copy(envPath, graphDbRepoPath, true);
+File.Copy(envPath, Path.Combine(graphDbRepoPath, ".env"), true);
 try
 {
     graphDb.StartNeo4jContainer(graphDbRepoPath);

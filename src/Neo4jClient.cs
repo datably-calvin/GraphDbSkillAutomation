@@ -62,7 +62,7 @@ public class Neo4jClient
     {
         var session = _client.AsyncSession();
         var cursor = session.RunAsync("MATCH (s:GraphState) RETURN s.commit AS commit LIMIT 1").Result;
-        var record = cursor.SingleAsync().Result;
+        var record = cursor.FirstOrDefaultAsync().Result;
         return record?[0].As<string>();
     }
     
