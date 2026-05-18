@@ -115,7 +115,7 @@ try
 }
 catch (Exception e)
 {
-    Console.WriteLine($"An error occurred while importing the JSONL file to neo4j: {repoPath}");
+    Console.WriteLine($"An error occurred while importing the JSONL file to neo4j: {jsonlOutputPath}");
     Console.WriteLine(e);
     return 1;
 }
