@@ -78,7 +78,7 @@ if (!File.Exists(graphDbBinaryFilePath))
 }
 #endregion
 
-var graphDb = new GraphDb(new GraphDbOptions
+var graphDb = new GraphDbClient(new GraphDbOptions
 {
     WorkingDirectory = workingDirectory,
     RepoPath = repoPath,

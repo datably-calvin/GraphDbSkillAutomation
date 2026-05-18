@@ -1,10 +1,10 @@
 namespace GraphDbSkillAutomation;
 
-public class GraphDb
+public class GraphDbClient
 {
     private readonly GraphDbOptions _options;
     
-    public GraphDb(GraphDbOptions options)
+    public GraphDbClient(GraphDbOptions options)
     {
         _options = options;
     }
