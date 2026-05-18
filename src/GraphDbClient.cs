@@ -1,5 +1,9 @@
 namespace GraphDbSkillAutomation;
 
+/// <summary>
+/// This is currently unused but may be re-introduced
+/// if we decide to ingest the code using clangd.
+/// </summary>
 public class GraphDbClient
 {
     private readonly GraphDbOptions _options;
@@ -9,37 +13,6 @@ public class GraphDbClient
         _options = options;
     }
 
-    public void StartNeo4jContainer(string graphDbRepoPath)
-    {
-        Console.WriteLine("Creating Neo4j container...");
-        
-        if (DockerHelper.IsContainerRunning("neo4j"))
-        {
-            Console.WriteLine("Neo4j container already exists.");
-            return;
-        }
-        
-        var neo4jStartupScriptPath = Path.Combine(
-            graphDbRepoPath, ".gemini", "skills",
-            "neo4j-manager", "scripts", "start_neo4j_container.sh");
-        
-        // Replace 'podman' with 'docker'
-        var scriptContent = File.ReadAllText(neo4jStartupScriptPath);
-        File.WriteAllText(neo4jStartupScriptPath, scriptContent.Replace("podman", "docker"));
-
-        Directory.SetCurrentDirectory(graphDbRepoPath);
-        
-        var result = ShellHelper.RunCommand("bash", neo4jStartupScriptPath);
-        if (!result.Success)
-        {
-            Directory.SetCurrentDirectory(_options.WorkingDirectory);
-            throw new Exception(result.StdErr);
-        }
-        
-        Directory.SetCurrentDirectory(_options.WorkingDirectory);
-        Console.WriteLine("Neo4j container started.");
-    }
-    
     // Usage of ingest:
     // -dir string
     //     Directory to walk (ignored if -file-list is used) (default ".")

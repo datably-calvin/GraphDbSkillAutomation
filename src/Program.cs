@@ -92,13 +92,6 @@ catch (Exception e)
     return 1;
 }
 
-var graphDb = new GraphDbClient(new GraphDbOptions
-{
-    WorkingDirectory = workingDirectory,
-    RepoPath = repoPath,
-    BinaryPath = graphDbBinaryFilePath
-});
-
 try
 {
     Environment.SetEnvironmentVariable("GRAPHDB_DIR", repoPath);
@@ -110,84 +103,10 @@ try
 }
 catch (Exception e)
 {
+    Console.WriteLine("The graphdb build-all process failed:");
     Console.WriteLine(e);
     return 1;
 }
 
-return 1;
-
-var jsonlOutputPath = Path.Combine(workingDirectory, "graph.jsonl");
-try
-{
-    graphDb.Ingest(jsonlOutputPath);
-}
-catch (Exception e)
-{
-    Console.WriteLine($"An error occurred while ingesting the codebase: {repoPath}");
-    Console.WriteLine(e);
-    return 1;
-}
-
-try
-{
-    graphDb.Import(jsonlOutputPath);
-}
-catch (Exception e)
-{
-    Console.WriteLine($"An error occurred while importing the JSONL file to neo4j: {jsonlOutputPath}");
-    Console.WriteLine(e);
-    return 1;
-}
-
-try
-{
-    graphDb.EnrichFeaturesAndEmbed();
-}
-catch (Exception e)
-{
-    Console.WriteLine("An error occurred while enriching features and embedding:");
-    Console.WriteLine(e);
-    return 1;
-}
-
-try
-{
-    graphDb.EnrichContamination();
-}
-catch (Exception e)
-{
-    Console.WriteLine("An error occurred while enriching contamination:");
-    Console.WriteLine(e);
-    return 1;
-}
-
-try
-{
-    graphDb.EnrichHistory();
-}
-catch (Exception e)
-{
-    Console.WriteLine("An error occurred while enriching history:");
-    Console.WriteLine(e);
-    return 1;
-}
-
-try
-{
-    if (File.Exists(jsonlOutputPath))
-    {
-        File.Delete(jsonlOutputPath);
-    }
-
-    File.Delete(graphDbBinaryFilePath);
-}
-catch (Exception e)
-{
-    Console.WriteLine("An error occurred while cleaning up the file system:");
-    Console.WriteLine(e);
-    Console.WriteLine("The graphdb process completed successfully.");
-    return 1;
-}
-
-Console.WriteLine("The graphdb process completed successfully.");
+Console.WriteLine("The graphdb build-all process completed successfully.");
 return 0;
