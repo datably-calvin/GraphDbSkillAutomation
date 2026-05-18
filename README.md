@@ -26,15 +26,15 @@ sudo apt-get install -y libicu-dev
 Your `.env` file should have the following values:
 ```
 # Neo4j
-NEO4J_URI=bolt://172.17.0.1:7687
-NEO4J_USER=neo4j
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=
 NEO4J_PASSWORD=
 
 # Google Cloud / Gemini
 GOOGLE_CLOUD_PROJECT=
 GOOGLE_CLOUD_LOCATION=
-GEMINI_GENERATIVE_MODEL=gemini-2.5-pro
-GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+GEMINI_GENERATIVE_MODEL=
+GEMINI_EMBEDDING_MODEL=
 GEMINI_EMBEDDING_DIMENSIONS=768
 LLM_CONCURRENCY=5
 ```
