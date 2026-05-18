@@ -152,8 +152,33 @@ catch (Exception e)
     return 1;
 }
 
-// TODO clean up
-// - remove jsonl file
-// - remove graphdb binary
+try
+{
+    graphDb.EnrichHistory();
+}
+catch (Exception e)
+{
+    Console.WriteLine("An error occurred while enriching history.");
+    Console.WriteLine(e);
+    return 1;
+}
 
+try
+{
+    if (File.Exists(jsonlOutputPath))
+    {
+        File.Delete(jsonlOutputPath);
+    }
+
+    File.Delete(graphDbBinaryFilePath);
+}
+catch (Exception e)
+{
+    Console.WriteLine("An error occurred while cleaning up the environment.");
+    Console.WriteLine(e);
+    Console.WriteLine("The graphdb process completed successfully.");
+    return 1;
+}
+
+Console.WriteLine("The graphdb process completed successfully.");
 return 0;

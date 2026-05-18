@@ -106,16 +106,11 @@ public class GraphDb
     public void EnrichFeaturesAndEmbed()
     {
         Console.WriteLine("Step 3: Feature enrichment and embedding...");
-        var gcloudAdc = FileHelper.GetAbsolutePath("~/.config/gcloud/application_default_credentials.json");
-        if (!File.Exists(gcloudAdc))
-        {
-            throw new Exception("Google Cloud Application Default Credentials is not setup. Please run 'gcloud auth application-default login'.");
-        }
+        GoogleCloudHelper.AssertValidADC();
 
         Directory.SetCurrentDirectory(_options.RepoPath);
         var result = ShellHelper.RunCommand(
-            _options.BinaryPath,
-            "enrich-features -dir", _options.RepoPath);
+            _options.BinaryPath, "enrich-features -dir", _options.RepoPath);
         
         if (!result.Success)
         {
@@ -140,6 +135,27 @@ public class GraphDb
         }
         
         Console.WriteLine("Contamination enrichment complete.");
+    }
+    
+    // Usage of enrich-history:
+    // -dir string
+    //     Directory to analyze (must be a git repository) (default ".")
+    // -since string
+    //     How far back to analyze history (default "1 year ago")
+    // TODO idempotence
+    public void EnrichHistory()
+    {
+        Console.WriteLine("Step 5: History enrichment...");
+
+        var result = ShellHelper.RunCommand(
+            _options.BinaryPath,
+            "enrich-history -dir", _options.RepoPath);
+        if (!result.Success)
+        {
+            throw new Exception(result.StdErr);
+        }
+        
+        Console.WriteLine("History enrichment complete.");
     }
 }
 

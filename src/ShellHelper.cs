@@ -27,12 +27,22 @@ public static class ShellHelper
 
     public static CommandOutput RunCommand(string command, params string[] args)
     {
-        Console.WriteLine($"Running command: {command} {string.Join(" ", args)}");
+        return RunCommand(new CommandParams
+        {
+            Command = command,
+            Args = string.Join(" ", args),
+            OutputToConsole = true
+        });
+    }
+
+    public static CommandOutput RunCommand(CommandParams commandParams)
+    {
+        Console.WriteLine($"Running command: {commandParams.Command} {commandParams.Args}");
         
         var processStartInfo = new ProcessStartInfo
         {
-            FileName = command,
-            Arguments = string.Join(" ", args),
+            FileName = commandParams.Command,
+            Arguments = commandParams.Args,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             CreateNoWindow = true
@@ -44,8 +54,8 @@ public static class ShellHelper
 
         StdOut.Clear();
         StdErr.Clear();
-        process.OutputDataReceived += LogStdOut;
-        process.ErrorDataReceived += LogStdErr;
+        process.OutputDataReceived += LogStdOut(commandParams.OutputToConsole);
+        process.ErrorDataReceived += LogStdErr(commandParams.OutputToConsole);
         
         process.Start();
         process.BeginOutputReadLine();
@@ -67,22 +77,27 @@ public static class ShellHelper
     }
 
     private static List<string> StdOut = [];
-    private static DataReceivedEventHandler LogStdOut = (_, e) =>
+    private static DataReceivedEventHandler LogStdOut(bool outputToConsole) => (_, e) =>
     {
         if (e.Data is null) return;
-        
-        Console.WriteLine($"stdout: {e.Data}");
+        if (outputToConsole) Console.WriteLine($"stdout: {e.Data}");
         StdOut.Add(e.Data);
     };
     
     private static List<string> StdErr = [];
-    private static DataReceivedEventHandler LogStdErr = (_, e) =>
+    private static DataReceivedEventHandler LogStdErr(bool outputToConsole) => (_, e) =>
     {
         if (e.Data is null) return;
-        
-        Console.WriteLine($"stderr: {e.Data}");
+        if (outputToConsole) Console.WriteLine($"stderr: {e.Data}");
         StdErr.Add(e.Data);
     };
+}
+
+public record CommandParams
+{
+    public required string Command { get; init; }
+    public required string Args { get; init; }
+    public required bool OutputToConsole { get; init; }
 }
 
 public record CommandOutput
