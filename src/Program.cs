@@ -48,13 +48,13 @@ if (!ShellHelper.RunCommand("docker", "ps").Success)
 
 if (!ShellHelper.IsCommandAvailable("gcloud"))
 {
-    Console.WriteLine("Please ensure 'gcloud' is in your PATH or install it: https://docs.cloud.google.com/sdk/docs/install-sdk#linux");
+    Console.WriteLine("Please ensure 'gcloud' is in your PATH or install it: https://docs.cloud.google.com/sdk/docs/install-sdk");
     return 1;
 }
 
 if (!ShellHelper.IsCommandAvailable("git"))
 {
-    Console.WriteLine("Please ensure 'git' is in your PATH or install it: https://git-scm.com/install/linux");
+    Console.WriteLine("Please ensure 'git' is in your PATH or install it: https://git-scm.com/install/");
     return 1;
 }
 #endregion
