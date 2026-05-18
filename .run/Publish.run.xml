@@ -1,6 +1,15 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Publish" type="DotNetFolderPublish" factoryName="Publish to folder">
-    <riderPublish configuration="Release" delete_existing_files="true" include_all_content_for_self_extract="true" include_native_libs_for_self_extract="true" platform="Any CPU" produce_single_file="true" target_folder="$PROJECT_DIR$/src/bin/Release/publish" target_framework="net10.0" uuid_high="7007007417747980379" uuid_low="-5749654213777461990" />
+    <riderPublish configuration="Release" delete_existing_files="true" include_all_content_for_self_extract="true" include_native_libs_for_self_extract="true" platform="Any CPU" produce_single_file="true" self_contained="true" target_folder="$PROJECT_DIR$/src/bin/Release/publish" target_framework="net10.0" uuid_high="7007007417747980379" uuid_low="-5749654213777461990">
+      <runtimes>
+        <item value="linux-x64" />
+        <item value="linux-musl-x64" />
+        <item value="linux-arm" />
+        <item value="linux-arm64" />
+        <item value="osx-x64" />
+        <item value="osx-arm64" />
+      </runtimes>
+    </riderPublish>
     <method v="2">
       <option name="Build" default="false" projectName="GraphDbSkillAutomation" projectPath="$PROJECT_DIR$/src/GraphDbSkillAutomation.csproj" />
     </method>
