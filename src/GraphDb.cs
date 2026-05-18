@@ -8,6 +8,36 @@ public class GraphDb
     {
         _options = options;
     }
+
+    public void StartNeo4jContainer(string graphDbRepoPath)
+    {
+        Console.WriteLine("Creating Neo4j container...");
+        
+        if (ShellHelper.DoesNeo4jContainerExist())
+        {
+            Console.WriteLine("Neo4j container already exists.");
+            return;
+        }
+        
+        var neo4jScriptsFolderPath = Path.Combine(graphDbRepoPath, ".gemini", "skills", "neo4j-manager", "scripts");
+        var neo4jStartupScriptPath = Path.Combine(neo4jScriptsFolderPath, "start_neo4j_container.sh");
+        
+        // Replace 'podman' with 'docker'
+        var scriptContent = File.ReadAllText(neo4jStartupScriptPath);
+        File.WriteAllText(neo4jStartupScriptPath, scriptContent.Replace("podman", "docker"));
+
+        Directory.SetCurrentDirectory(neo4jScriptsFolderPath);
+        
+        var result = ShellHelper.RunCommand("bash", neo4jStartupScriptPath);
+        if (!result.Success)
+        {
+            Directory.SetCurrentDirectory(_options.WorkingDirectory);
+            throw new Exception(result.StdErr);
+        }
+        
+        Directory.SetCurrentDirectory(_options.WorkingDirectory);
+        Console.WriteLine("Neo4j container started.");
+    }
     
     // Usage of ingest:
     // -dir string

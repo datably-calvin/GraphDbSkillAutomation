@@ -2,10 +2,6 @@
 using GraphDbSkillAutomation;
 
 #region Parameter Checks
-// ------------------------
-// --- Check parameters ---
-// ------------------------
-
 if (args.Length != 3)
 {
     Console.WriteLine($"Usage: {Environment.ProcessPath} <repo path> <.env path> <working directory>");
@@ -25,26 +21,21 @@ if (!File.Exists(envPath))
     Console.WriteLine($"File '{envPath}' does not exist");
     return 1;
 }
-DotEnv.Fluent()
-    .WithEnvFiles(envPath)
-    .Load();
 
+DotEnv.Load(new DotEnvOptions(
+    envFilePaths: [envPath]));
 
 var workingDirectory = FileHelper.GetAbsolutePath(args[2]);
 if (!Directory.Exists(workingDirectory))
 {
-    Console.WriteLine($"Path '{workingDirectory}' does not exist");
-    return 1;
+    Directory.CreateDirectory(workingDirectory);
 }
 #endregion
 
-#region Dependency Check
-// --------------------------
-// --- Check dependencies ---
-// --------------------------
+#region Dependency Checks
 if (!ShellHelper.IsCommandAvailable("docker"))
 {
-    Console.WriteLine("Please install Docker: https://docs.docker.com/engine/install/");
+    Console.WriteLine("Please ensure 'docker' is in your PATH or install it: https://docs.docker.com/engine/install/");
     return 1;
 }
 
@@ -54,14 +45,21 @@ if (!ShellHelper.RunCommand("docker", "ps").Success)
     Console.WriteLine("Then, log back into the shell.");
     return 1;
 }
+
+if (!ShellHelper.IsCommandAvailable("gcloud"))
+{
+    Console.WriteLine("Please ensure 'gcloud' is in your PATH or install it: https://docs.cloud.google.com/sdk/docs/install-sdk#linux");
+    return 1;
+}
+
+if (!ShellHelper.IsCommandAvailable("git"))
+{
+    Console.WriteLine("Please ensure 'git' is in your PATH or install it: https://git-scm.com/install/linux");
+    return 1;
+}
 #endregion
 
-#region Environment Check
-// -------------------------
-// --- Check environment ---
-// -------------------------
-
-// TODO this should probably be independent of the repo path
+#region graphdb-skill Repo Checks
 var graphDbRepoPath = Path.Combine(workingDirectory, "graphdb");
 if (!Directory.Exists(graphDbRepoPath))
 {
@@ -69,10 +67,7 @@ if (!Directory.Exists(graphDbRepoPath))
     ShellHelper.RunCommand("git", $"clone -q https://github.com/jjdelorme/graphdb-skill.git {graphDbRepoPath}");
 }
 
-var geminiSkillsFolder = Path.Combine(graphDbRepoPath, ".gemini", "skills");
-var graphDbBinaryFolderPath = Path.Combine(geminiSkillsFolder, "graphdb", "scripts");
-
-// TODO the GraphState node containing the git commit comes from whatever directory the binary is in
+var graphDbBinaryFolderPath = Path.Combine(graphDbRepoPath, ".gemini", "skills", "graphdb", "scripts");
 var graphDbBinaryFilePath = Path.Combine(graphDbBinaryFolderPath, "graphdb");
 if (!File.Exists(graphDbBinaryFilePath))
 {
@@ -80,23 +75,6 @@ if (!File.Exists(graphDbBinaryFilePath))
     Directory.CreateDirectory(graphDbBinaryFolderPath);
     FileHelper.DownloadFile(graphDbBinaryFilePath, "https://github.com/jjdelorme/graphdb-skill/releases/latest/download/graphdb");
     ShellHelper.RunCommand("chmod", $"+x {graphDbBinaryFilePath}");
-}
-
-var neo4jScriptsFolderPath = Path.Combine(geminiSkillsFolder, "neo4j-manager", "scripts");
-var neo4jEnvPath = Path.Combine(neo4jScriptsFolderPath, ".env");
-File.Copy(envPath, neo4jEnvPath, true);
-if (!ShellHelper.DoesNeo4jContainerExist())
-{
-    Console.WriteLine("Starting Neo4j container...");
-                    
-    var neo4jStartupScriptPath = Path.Combine(neo4jScriptsFolderPath, "start_neo4j_container.sh");
-    var scriptContent = File.ReadAllText(neo4jStartupScriptPath);
-    File.WriteAllText(neo4jStartupScriptPath, scriptContent.Replace("podman", "docker"));
-
-    var currentDir = Directory.GetCurrentDirectory();
-    Directory.SetCurrentDirectory(neo4jScriptsFolderPath);
-    ShellHelper.RunCommand("bash", neo4jStartupScriptPath);
-    Directory.SetCurrentDirectory(currentDir);
 }
 #endregion
 
@@ -106,6 +84,18 @@ var graphDb = new GraphDb(new GraphDbOptions
     RepoPath = repoPath,
     BinaryPath = graphDbBinaryFilePath
 });
+
+File.Copy(envPath, graphDbRepoPath, true);
+try
+{
+    graphDb.StartNeo4jContainer(graphDbRepoPath);
+}
+catch (Exception e)
+{
+    Console.WriteLine("An error occurred while starting up the neo4j container:");
+    Console.WriteLine(e);
+    return 1;
+}
 
 var jsonlOutputPath = Path.Combine(workingDirectory, "graph.jsonl");
 try
@@ -136,7 +126,7 @@ try
 }
 catch (Exception e)
 {
-    Console.WriteLine("An error occurred while enriching features and embedding.");
+    Console.WriteLine("An error occurred while enriching features and embedding:");
     Console.WriteLine(e);
     return 1;
 }
@@ -147,7 +137,7 @@ try
 }
 catch (Exception e)
 {
-    Console.WriteLine("An error occurred while enriching contamination.");
+    Console.WriteLine("An error occurred while enriching contamination:");
     Console.WriteLine(e);
     return 1;
 }
@@ -158,7 +148,7 @@ try
 }
 catch (Exception e)
 {
-    Console.WriteLine("An error occurred while enriching history.");
+    Console.WriteLine("An error occurred while enriching history:");
     Console.WriteLine(e);
     return 1;
 }
@@ -174,7 +164,7 @@ try
 }
 catch (Exception e)
 {
-    Console.WriteLine("An error occurred while cleaning up the environment.");
+    Console.WriteLine("An error occurred while cleaning up the environment:");
     Console.WriteLine(e);
     Console.WriteLine("The graphdb process completed successfully.");
     return 1;
