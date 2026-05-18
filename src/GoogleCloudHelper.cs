@@ -17,16 +17,16 @@ public class GoogleCloudHelper
             throw new Exception("gcloud was not found in your PATH.");
         }
 
-        var accessTokenResult = ShellHelper.RunCommand(new CommandParams
+        var result = ShellHelper.RunCommand(new CommandParams
         {
             Command = "gcloud",
             Args = "auth application-default print-access-token",
             OutputToConsole = false
         });
-        if (!accessTokenResult.Success)
+        if (!result.Success)
         {
             throw new Exception(
-                "Google Cloud Application Default Credentials need to be refreshed. Please run 'gcloud auth application-default login");
+                "Google Cloud Application Default Credentials need to be refreshed. Please run 'gcloud auth application-default login'.");
         }
     }
 }
