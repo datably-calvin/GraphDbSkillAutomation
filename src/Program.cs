@@ -164,7 +164,7 @@ try
 }
 catch (Exception e)
 {
-    Console.WriteLine("An error occurred while cleaning up the environment:");
+    Console.WriteLine("An error occurred while cleaning up the file system:");
     Console.WriteLine(e);
     Console.WriteLine("The graphdb process completed successfully.");
     return 1;
