@@ -48,7 +48,10 @@ public class Neo4jClient
         var session = _client.AsyncSession();
         var cursor = session.RunAsync("MATCH (s:GraphState) RETURN s.commit AS commit LIMIT 1").Result;
         var record = cursor.FirstOrDefaultAsync().Result;
-        return record?[0].As<string>();
+        var commit = record?[0].As<string>();
+        
+        Console.WriteLine($"Current commit in database: {commit}");
+        return commit;
     }
     
     public int QueryInt(string query)
