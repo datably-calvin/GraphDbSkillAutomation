@@ -57,22 +57,11 @@ if (!ShellHelper.IsCommandAvailable("git"))
     Console.WriteLine("Please ensure 'git' is in your PATH or install it: https://git-scm.com/install/");
     return 1;
 }
-#endregion
 
-#region graphdb-skill Repo Checks
-var graphDbRepoPath = Path.Combine(workingDirectory, "graphdb");
-if (!Directory.Exists(graphDbRepoPath))
-{
-    Console.WriteLine("Pulling GraphDB repo from GitHub...");
-    ShellHelper.RunCommand("git", $"clone -q https://github.com/jjdelorme/graphdb-skill.git {graphDbRepoPath}");
-}
-
-var graphDbBinaryFolderPath = Path.Combine(graphDbRepoPath, ".gemini", "skills", "graphdb", "scripts");
-var graphDbBinaryFilePath = Path.Combine(graphDbBinaryFolderPath, "graphdb");
+var graphDbBinaryFilePath = Path.Combine(workingDirectory, "graphdb");
 if (!File.Exists(graphDbBinaryFilePath))
 {
     Console.WriteLine($"Downloading graphdb release v1.8.0 to '{graphDbBinaryFilePath}'...");
-    Directory.CreateDirectory(graphDbBinaryFolderPath);
     FileHelper.DownloadFile(graphDbBinaryFilePath, "https://github.com/jjdelorme/graphdb-skill/releases/download/v1.8.0/graphdb");
     ShellHelper.RunCommand("chmod", $"+x {graphDbBinaryFilePath}");
 }
@@ -92,23 +81,85 @@ catch (Exception e)
     return 1;
 }
 
-GoogleCloudHelper.AssertValidADC();
+var graphDb = new GraphDbClient(new GraphDbOptions
+{
+    WorkingDirectory = workingDirectory,
+    RepoPath = repoPath,
+    BinaryPath = graphDbBinaryFilePath
+});
 
+var jsonlOutputPath = Path.Combine(workingDirectory, "graph.jsonl");
 try
 {
-    Environment.SetEnvironmentVariable("GRAPHDB_DIR", repoPath);
-    var buildAll = ShellHelper.RunCommand(graphDbBinaryFilePath, "build-all");
-    if (!buildAll.Success)
-    {
-        throw new Exception(buildAll.StdErr);
-    }
+    graphDb.Ingest(jsonlOutputPath);
 }
 catch (Exception e)
 {
-    Console.WriteLine("The graphdb build-all process failed:");
+    Console.WriteLine($"An error occurred while ingesting the codebase: {repoPath}");
     Console.WriteLine(e);
     return 1;
 }
 
-Console.WriteLine("The graphdb build-all process completed successfully.");
+try
+{
+    graphDb.Import(jsonlOutputPath);
+}
+catch (Exception e)
+{
+    Console.WriteLine($"An error occurred while importing the JSONL file to neo4j: {jsonlOutputPath}");
+    Console.WriteLine(e);
+    return 1;
+}
+
+try
+{
+    graphDb.EnrichFeaturesAndEmbed();
+}
+catch (Exception e)
+{
+    Console.WriteLine("An error occurred while enriching features and embedding:");
+    Console.WriteLine(e);
+    return 1;
+}
+
+try
+{
+    graphDb.EnrichContamination();
+}
+catch (Exception e)
+{
+    Console.WriteLine("An error occurred while enriching contamination:");
+    Console.WriteLine(e);
+    return 1;
+}
+
+try
+{
+    graphDb.EnrichHistory();
+}
+catch (Exception e)
+{
+    Console.WriteLine("An error occurred while enriching history:");
+    Console.WriteLine(e);
+    return 1;
+}
+
+try
+{
+    if (File.Exists(jsonlOutputPath))
+    {
+        File.Delete(jsonlOutputPath);
+    }
+
+    File.Delete(graphDbBinaryFilePath);
+}
+catch (Exception e)
+{
+    Console.WriteLine("An error occurred while cleaning up the file system:");
+    Console.WriteLine(e);
+    Console.WriteLine("The graphdb process completed successfully.");
+    return 1;
+}
+
+Console.WriteLine("The graphdb process completed successfully.");
 return 0;
