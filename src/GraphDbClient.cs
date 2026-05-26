@@ -30,12 +30,21 @@ public class GraphDbClient
     //     Number of workers (default 4)
     public void Ingest(string jsonlOutputPath)
     {
+        Console.WriteLine();
         Console.WriteLine($"Step 1: Ingesting the codebase into a JSONL file -> '{jsonlOutputPath}'");
         // TODO check if this step already ran using the graph database
         // TODO if the file already exists, maybe use the -since-commit flag?
         if (File.Exists(jsonlOutputPath))
         {
             Console.WriteLine($"The JSONL file '{jsonlOutputPath}' already exists. Skipping ingestion.");
+            return;
+        }
+        
+        var databaseCommit = Neo4jClient.CreateFromEnvironment.GetCurrentCommit();
+        if (databaseCommit is not null)
+        {
+            Console.WriteLine($"Database already has a node for commit {databaseCommit}.");
+            Console.WriteLine("Incremental updates are not implemented yet. Skipping import.");
             return;
         }
         
@@ -63,7 +72,9 @@ public class GraphDbClient
     //     Path to nodes JSONL file
     public void Import(string jsonlOutputPath)
     {
+        Console.WriteLine();
         Console.WriteLine("Step 2: Importing graph JSONL data into the database...");
+        
         if (!File.Exists(jsonlOutputPath))
         {
             throw new Exception($"Unable to find graph data file at '{jsonlOutputPath}'.");
@@ -109,7 +120,9 @@ public class GraphDbClient
     // TODO idempotence?
     public void EnrichFeaturesAndEmbed()
     {
+        Console.WriteLine();
         Console.WriteLine("Step 3: Feature enrichment and embedding...");
+        
         GoogleCloudHelper.AssertValidADC();
 
         Directory.SetCurrentDirectory(_options.RepoPath);
@@ -130,6 +143,7 @@ public class GraphDbClient
     // TODO idempotence?
     public void EnrichContamination()
     {
+        Console.WriteLine();
         Console.WriteLine("Step 4: Contamination enrichment...");
         
         var result = ShellHelper.RunCommand(_options.BinaryPath, "enrich-contamination");
@@ -149,6 +163,7 @@ public class GraphDbClient
     // TODO idempotence
     public void EnrichHistory()
     {
+        Console.WriteLine();
         Console.WriteLine("Step 5: History enrichment...");
 
         var result = ShellHelper.RunCommand(
