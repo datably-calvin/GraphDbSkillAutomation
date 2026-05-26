@@ -92,6 +92,8 @@ catch (Exception e)
     return 1;
 }
 
+GoogleCloudHelper.AssertValidADC();
+
 try
 {
     Environment.SetEnvironmentVariable("GRAPHDB_DIR", repoPath);
