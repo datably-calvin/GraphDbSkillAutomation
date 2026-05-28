@@ -31,20 +31,20 @@ public class GraphDbClient
     public void Ingest(string nodesJsonl, string edgesJsonl)
     {
         Console.WriteLine();
-        Console.WriteLine($"Step 1: Ingesting the codebase into JSONL files. Nodes: {nodesJsonl} Edges: {edgesJsonl}");
-        // TODO check if this step already ran using the graph database
-        // TODO if the file already exists, maybe use the -since-commit flag?
-        if (File.Exists(nodesJsonl) && File.Exists(edgesJsonl))
-        {
-            Console.WriteLine("The JSONL files for nodes and edges already exists. Skipping ingestion.");
-            return;
-        }
+        Console.WriteLine($"Step 1: Ingesting the codebase into JSONL files. Nodes: '{nodesJsonl}' Edges: '{edgesJsonl}'");
         
         var databaseCommit = Neo4jClient.CreateFromEnvironment.GetCurrentCommit();
         if (databaseCommit is not null)
         {
             Console.WriteLine($"Database already has a node for commit {databaseCommit}.");
-            Console.WriteLine("Incremental updates are not implemented yet. Skipping import.");
+            Console.WriteLine("Incremental updates are not implemented yet. Skipping ingestion.");
+            return;
+        }
+        
+        // TODO if the file already exists, maybe use the -since-commit flag?
+        if (File.Exists(nodesJsonl) && File.Exists(edgesJsonl))
+        {
+            Console.WriteLine("The JSONL files for nodes and edges already exists. Skipping ingestion.");
             return;
         }
 
@@ -79,25 +79,20 @@ public class GraphDbClient
         Console.WriteLine();
         Console.WriteLine("Step 2: Importing graph JSONL data into the database...");
         
-        if (!File.Exists(nodesJsonl) || !File.Exists(edgesJsonl))
-        {
-            throw new Exception($"One or both of the graph data files do not exist. Nodes: {nodesJsonl} Edges: {edgesJsonl}");
-        }
-
-        var neo4jClient = Neo4jClient.CreateFromEnvironment;
-        if (!neo4jClient.IsHealthy(6, 5))
-        {
-            throw new Exception("Could not connect to neo4j database.");
-        }
-
-        var databaseCommit = neo4jClient.GetCurrentCommit();
+        var databaseCommit = Neo4jClient.CreateFromEnvironment.GetCurrentCommit();
         if (databaseCommit is not null)
         {
             Console.WriteLine($"Database already has a node for commit {databaseCommit}.");
             Console.WriteLine("Incremental updates are not implemented yet. Skipping import.");
             return;
         }
+        
+        if (!File.Exists(nodesJsonl) || !File.Exists(edgesJsonl))
+        {
+            throw new Exception($"One or both of the graph data files do not exist. Nodes: '{nodesJsonl}' Edges: '{edgesJsonl}'");
+        }
 
+        Directory.SetCurrentDirectory(_options.RepoPath);
         var result = ShellHelper.RunCommand(
             _options.BinaryPath, "import",
             "-nodes", nodesJsonl,
@@ -137,11 +132,9 @@ public class GraphDbClient
         
         if (!result.Success)
         {
-            Directory.SetCurrentDirectory(_options.WorkingDirectory);
             throw new Exception(result.StdErr);
         }
         
-        Directory.SetCurrentDirectory(_options.WorkingDirectory);
         Console.WriteLine("Feature enrichment and embedding complete.");
     }
 

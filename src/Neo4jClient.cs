@@ -45,8 +45,16 @@ public class Neo4jClient
 
     public string? GetCurrentCommit()
     {
+        var query = """
+            MATCH (s)
+            WHERE s:GraphState or s:Metadata
+            RETURN s.commit AS commit
+            ORDER BY s.updatedAt DESC
+            LIMIT 1
+            """;
+        
         var session = _client.AsyncSession();
-        var cursor = session.RunAsync("MATCH (s:GraphState) RETURN s.commit AS commit LIMIT 1").Result;
+        var cursor = session.RunAsync(query).Result;
         var record = cursor.FirstOrDefaultAsync().Result;
         var commit = record?[0].As<string>();
         
