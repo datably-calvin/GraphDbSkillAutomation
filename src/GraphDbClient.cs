@@ -31,7 +31,7 @@ public class GraphDbClient
     public void Ingest(string nodesJsonl, string edgesJsonl)
     {
         Console.WriteLine();
-        Console.WriteLine($"Step 1: Ingesting the codebase into JSONL files. Nodes: '{nodesJsonl}' Edges: '{edgesJsonl}'");
+        Console.WriteLine($":: Ingesting the codebase into JSONL files. Nodes: '{nodesJsonl}' Edges: '{edgesJsonl}'");
         
         var databaseCommit = Neo4jClient.CreateFromEnvironment.GetCurrentCommit();
         if (databaseCommit is not null)
@@ -77,7 +77,7 @@ public class GraphDbClient
     public void Import(string nodesJsonl, string edgesJsonl)
     {
         Console.WriteLine();
-        Console.WriteLine("Step 2: Importing graph JSONL data into the database...");
+        Console.WriteLine(":: Importing graph JSONL data into the database...");
         
         var databaseCommit = Neo4jClient.CreateFromEnvironment.GetCurrentCommit();
         if (databaseCommit is not null)
@@ -121,7 +121,7 @@ public class GraphDbClient
     public void EnrichFeaturesAndEmbed()
     {
         Console.WriteLine();
-        Console.WriteLine("Step 3: Feature enrichment and embedding...");
+        Console.WriteLine(":: Feature enrichment and embedding...");
         
         GoogleCloudHelper.AssertValidADC();
 
@@ -143,7 +143,7 @@ public class GraphDbClient
     public void EnrichContamination()
     {
         Console.WriteLine();
-        Console.WriteLine("Step 4: Contamination enrichment...");
+        Console.WriteLine(":: Contamination enrichment...");
         
         var result = ShellHelper.RunCommand(_options.BinaryPath, "enrich-contamination");
         if (!result.Success)
@@ -163,7 +163,7 @@ public class GraphDbClient
     public void EnrichHistory()
     {
         Console.WriteLine();
-        Console.WriteLine("Step 5: History enrichment...");
+        Console.WriteLine(":: History enrichment...");
 
         var result = ShellHelper.RunCommand(
             _options.BinaryPath, "enrich-history",

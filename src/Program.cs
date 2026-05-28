@@ -125,22 +125,22 @@ catch (Exception e)
 
 try
 {
-    graphDb.EnrichContamination();
+    graphDb.EnrichHistory();
 }
 catch (Exception e)
 {
-    Console.WriteLine("An error occurred while enriching contamination:");
+    Console.WriteLine("An error occurred while enriching history:");
     Console.WriteLine(e);
     return 1;
 }
 
 try
 {
-    graphDb.EnrichHistory();
+    graphDb.EnrichContamination();
 }
 catch (Exception e)
 {
-    Console.WriteLine("An error occurred while enriching history:");
+    Console.WriteLine("An error occurred while enriching contamination:");
     Console.WriteLine(e);
     return 1;
 }
