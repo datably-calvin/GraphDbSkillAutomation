@@ -23,4 +23,12 @@ public static class FileHelper
         
         return Path.GetFullPath(path);
     }
+
+    public static void DeleteFileIfExists(string path)
+    {
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+        }
+    }
 }

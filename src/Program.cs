@@ -88,10 +88,11 @@ var graphDb = new GraphDbClient(new GraphDbOptions
     BinaryPath = graphDbBinaryFilePath
 });
 
-var jsonlOutputPath = Path.Combine(workingDirectory, "graph.jsonl");
+var nodesJsonl = Path.Combine(workingDirectory, "nodes.jsonl");
+var edgesJsonl = Path.Combine(workingDirectory, "edges.jsonl");
 try
 {
-    graphDb.Ingest(jsonlOutputPath);
+    graphDb.Ingest(nodesJsonl, edgesJsonl);
 }
 catch (Exception e)
 {
@@ -102,11 +103,11 @@ catch (Exception e)
 
 try
 {
-    graphDb.Import(jsonlOutputPath);
+    graphDb.Import(nodesJsonl, edgesJsonl);
 }
 catch (Exception e)
 {
-    Console.WriteLine($"An error occurred while importing the JSONL file to neo4j: {jsonlOutputPath}");
+    Console.WriteLine($"An error occurred while importing JSONL files to neo4j. Nodes: {nodesJsonl} Edges: {edgesJsonl}");
     Console.WriteLine(e);
     return 1;
 }
@@ -146,12 +147,9 @@ catch (Exception e)
 
 try
 {
-    if (File.Exists(jsonlOutputPath))
-    {
-        File.Delete(jsonlOutputPath);
-    }
-
-    File.Delete(graphDbBinaryFilePath);
+    FileHelper.DeleteFileIfExists(nodesJsonl);
+    FileHelper.DeleteFileIfExists(edgesJsonl);
+    FileHelper.DeleteFileIfExists(graphDbBinaryFilePath);
 }
 catch (Exception e)
 {

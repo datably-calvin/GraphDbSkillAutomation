@@ -28,15 +28,15 @@ public class GraphDbClient
     //     Commit hash for incremental ingestion (skips JSONL, writes to DB)
     // -workers int
     //     Number of workers (default 4)
-    public void Ingest(string jsonlOutputPath)
+    public void Ingest(string nodesJsonl, string edgesJsonl)
     {
         Console.WriteLine();
-        Console.WriteLine($"Step 1: Ingesting the codebase into a JSONL file -> '{jsonlOutputPath}'");
+        Console.WriteLine($"Step 1: Ingesting the codebase into JSONL files. Nodes: {nodesJsonl} Edges: {edgesJsonl}");
         // TODO check if this step already ran using the graph database
         // TODO if the file already exists, maybe use the -since-commit flag?
-        if (File.Exists(jsonlOutputPath))
+        if (File.Exists(nodesJsonl) && File.Exists(edgesJsonl))
         {
-            Console.WriteLine($"The JSONL file '{jsonlOutputPath}' already exists. Skipping ingestion.");
+            Console.WriteLine("The JSONL files for nodes and edges already exists. Skipping ingestion.");
             return;
         }
         
@@ -47,11 +47,15 @@ public class GraphDbClient
             Console.WriteLine("Incremental updates are not implemented yet. Skipping import.");
             return;
         }
+
+        FileHelper.DeleteFileIfExists(nodesJsonl);
+        FileHelper.DeleteFileIfExists(edgesJsonl);
         
         var result = ShellHelper.RunCommand(
-            _options.BinaryPath,
-            "ingest -dir", _options.RepoPath,
-            "-output", jsonlOutputPath);
+            _options.BinaryPath, "ingest",
+            "-dir", _options.RepoPath,
+            "-nodes", nodesJsonl,
+            "-edges", edgesJsonl);
         
         if (!result.Success)
         {
@@ -70,14 +74,14 @@ public class GraphDbClient
     //     Path to combined JSONL file (nodes + edges)
     // -nodes string
     //     Path to nodes JSONL file
-    public void Import(string jsonlOutputPath)
+    public void Import(string nodesJsonl, string edgesJsonl)
     {
         Console.WriteLine();
         Console.WriteLine("Step 2: Importing graph JSONL data into the database...");
         
-        if (!File.Exists(jsonlOutputPath))
+        if (!File.Exists(nodesJsonl) || !File.Exists(edgesJsonl))
         {
-            throw new Exception($"Unable to find graph data file at '{jsonlOutputPath}'.");
+            throw new Exception($"One or both of the graph data files do not exist. Nodes: {nodesJsonl} Edges: {edgesJsonl}");
         }
 
         var neo4jClient = Neo4jClient.CreateFromEnvironment;
@@ -95,8 +99,9 @@ public class GraphDbClient
         }
 
         var result = ShellHelper.RunCommand(
-            _options.BinaryPath,
-            "import -input", jsonlOutputPath);
+            _options.BinaryPath, "import",
+            "-nodes", nodesJsonl,
+            "-edges", edgesJsonl);
         
         if (!result.Success)
         {
@@ -127,7 +132,8 @@ public class GraphDbClient
 
         Directory.SetCurrentDirectory(_options.RepoPath);
         var result = ShellHelper.RunCommand(
-            _options.BinaryPath, "enrich-features -dir", _options.RepoPath);
+            _options.BinaryPath, "enrich-features",
+            "-dir", _options.RepoPath);
         
         if (!result.Success)
         {
@@ -167,8 +173,9 @@ public class GraphDbClient
         Console.WriteLine("Step 5: History enrichment...");
 
         var result = ShellHelper.RunCommand(
-            _options.BinaryPath,
-            "enrich-history -dir", _options.RepoPath);
+            _options.BinaryPath, "enrich-history",
+            "-dir", _options.RepoPath);
+        
         if (!result.Success)
         {
             throw new Exception(result.StdErr);
