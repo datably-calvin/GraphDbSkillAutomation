@@ -73,6 +73,12 @@ try
     {
         DockerHelper.StartNeo4jContainer(workingDirectory);
     }
+    
+    var (count, wait) = (12, 5);
+    if (!Neo4jClient.CreateFromEnvironment.IsHealthy(count, wait))
+    {
+        throw new Exception($"Neo4j container did not become healthy within {count * wait} seconds");
+    }
 }
 catch (Exception e)
 {

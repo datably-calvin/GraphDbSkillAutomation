@@ -25,10 +25,5 @@ public class DockerHelper
         {
             throw new Exception(result.StdErr);
         }
-
-        if (!Neo4jClient.CreateFromEnvironment.IsHealthy(12, 5))
-        {
-            throw new Exception("Neo4j container did not start up.");
-        }
     }
 }
